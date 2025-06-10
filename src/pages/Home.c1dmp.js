@@ -27,10 +27,11 @@ $w.onReady(function () {
 function hideAllElements() {
   // Masquer les sections qui ne sont pas encore nécessaires
   try {
-    $w('#loginSection').hide();
-    $w('#dashboardSection').hide();
-    $w('#registrationSection').hide();
-    $w('#loadingSection').show();
+    $w('#section2').hide(); // Login Section
+    $w('#section3').hide(); // Dashboard Section
+    $w('#section4').hide(); // Registration Section (nested in section3)
+    // $w('#loadingSection').show(); // Will add this as a new section
+    console.log('Sections organisées: section2=Login, section3=Dashboard, section4=Registration');
   } catch (error) {
     console.log('Éléments de page non trouvés, utilisation de l\'affichage par défaut');
   }
@@ -128,17 +129,21 @@ function determineUserRole(user) {
 // Fonction pour afficher le formulaire de connexion
 function showLoginForm() {
   try {
-    $w('#loadingSection').hide();
-    $w('#dashboardSection').hide();
-    $w('#loginSection').show();
+    $w('#section3').hide(); // Dashboard
+    $w('#section4').hide(); // Registration
+    $w('#section2').show(); // Login
     
-    // Mettre à jour les textes de connexion
-    $w('#loginTitle').text = 'École Management System';
-    $w('#loginSubtitle').text = 'Connectez-vous pour accéder à votre espace';
-    $w('#loginButton').label = 'Se connecter';
+    // Mettre à jour les textes de connexion si les éléments existent
+    try {
+      $w('#loginTitle').text = 'École Management System';
+      $w('#loginSubtitle').text = 'Connectez-vous pour accéder à votre espace';
+      $w('#loginButton').label = 'Se connecter';
+      $w('#loginError').hide();
+    } catch (e) {
+      console.log('Éléments de login non encore créés dans l\'éditeur');
+    }
     
-    // Masquer le message d'erreur
-    $w('#loginError').hide();
+    console.log('✅ Section Login affichée (section2)');
     
   } catch (error) {
     console.error('Erreur affichage formulaire de connexion:', error);
@@ -148,16 +153,22 @@ function showLoginForm() {
 // Fonction pour afficher le dashboard
 function showDashboard() {
   try {
-    $w('#loadingSection').hide();
-    $w('#loginSection').hide();
-    $w('#dashboardSection').show();
+    $w('#section2').hide(); // Login
+    $w('#section4').hide(); // Registration
+    $w('#section3').show(); // Dashboard
     
-    // Mettre à jour les informations utilisateur
-    $w('#userWelcome').text = `Bienvenue, ${currentUser?.name || currentUser?.id || 'Utilisateur'}`;
-    $w('#userRole').text = getRoleDisplayName(userRole);
+    // Mettre à jour les informations utilisateur si les éléments existent
+    try {
+      $w('#userWelcome').text = `Bienvenue, ${currentUser?.name || currentUser?.id || 'Utilisateur'}`;
+      $w('#userRole').text = getRoleDisplayName(userRole);
+    } catch (e) {
+      console.log('Éléments de dashboard non encore créés dans l\'éditeur');
+    }
     
     // Charger le contenu selon le rôle
     loadDashboardContent();
+    
+    console.log('✅ Section Dashboard affichée (section3) pour le rôle:', userRole);
     
   } catch (error) {
     console.error('Erreur affichage dashboard:', error);
@@ -356,17 +367,17 @@ export function navRegistration_click(event) {
 function showRegistrationForm() {
   try {
     // Masquer les autres sections
-    $w('#loginSection').hide();
-    $w('#dashboardSection').hide();
-    $w('#loadingSection').hide();
+    $w('#section2').hide(); // Login
+    $w('#section3').hide(); // Dashboard
     
-    // Afficher la section inscription
-    $w('#registrationSection').show();
+    // Afficher la section inscription (nested dans section3)
+    $w('#section3').show(); // Montrer le parent d'abord
+    $w('#section4').show(); // Puis montrer l'inscription
     
     // Adapter l'interface selon le rôle
     setupRegistrationForm();
     
-    console.log('Formulaire d\'inscription affiché pour:', userRole);
+    console.log('✅ Formulaire d\'inscription affiché (section4) pour:', userRole);
     
   } catch (error) {
     console.error('Erreur affichage formulaire inscription:', error);
@@ -376,9 +387,13 @@ function showRegistrationForm() {
 // Configuration du formulaire d'inscription selon le rôle
 function setupRegistrationForm() {
   try {
-    // Informations utilisateur
-    $w('#regCurrentUserName').text = currentUser?.name || 'Utilisateur';
-    $w('#regCurrentUserRole').text = getRoleDisplayName(userRole);
+    // Informations utilisateur (si les éléments existent)
+    try {
+      $w('#regCurrentUserName').text = currentUser?.name || 'Utilisateur';
+      $w('#regCurrentUserRole').text = getRoleDisplayName(userRole);
+    } catch (e) {
+      console.log('Éléments utilisateur de registration non encore créés');
+    }
     
     if (userRole === 'parent') {
       setupParentRegistration();
@@ -388,6 +403,8 @@ function setupRegistrationForm() {
     
     // Réinitialiser le formulaire
     clearRegistrationForm();
+    
+    console.log('📝 Formulaire d\'inscription configuré pour:', getRoleDisplayName(userRole));
     
   } catch (error) {
     console.error('Erreur configuration formulaire:', error);
