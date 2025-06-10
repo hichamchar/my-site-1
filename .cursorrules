@@ -1,0 +1,179 @@
+# École Management System - Cursor Intelligence
+
+## Project Type: Wix Multi-Client Platform (MCP) School Management Application
+
+### Critical Implementation Patterns
+
+#### Wix-Specific Development
+- Always use Wix components from `wix-style-react` when available
+- Utilize `$w()` selector for DOM manipulation in Velo pages
+- Import Wix APIs: `import wixAuth from 'wix-auth-frontend'`
+- File structure must follow Wix conventions: src/pages/, src/backend/, src/public/
+- Use `.js` extensions (not `.jsx`) for Wix compatibility
+
+#### Authentication & Roles Pattern
+```javascript
+// Always structure auth context like this:
+const AuthContext = createContext({
+  user: null,
+  userRole: null, // 'admin', 'teacher', 'parent'
+  loading: true,
+  login: () => {},
+  logout: () => {}
+});
+
+// Role-based component rendering pattern:
+const RoleBasedComponent = ({ allowedRoles, children }) => {
+  const { userRole } = useAuth();
+  return allowedRoles.includes(userRole) ? children : null;
+};
+```
+
+#### Google Sheets Integration Pattern
+```javascript
+// Always use this service structure for Google Sheets:
+class GoogleSheetsService {
+  constructor() {
+    this.spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
+    this.apiKey = process.env.GOOGLE_API_KEY;
+  }
+  
+  async batchUpdate(requests) {
+    // Batch operations to minimize API calls
+  }
+  
+  async withRetry(operation, maxRetries = 3) {
+    // Always implement retry logic for API calls
+  }
+}
+```
+
+#### Data Relationships (Google Sheets as DB)
+- Students.ParentID → Parents.ID (one-to-many)
+- Students.ClassID → Classes.ID (many-to-one)
+- Classes.TeacherID → Teachers.ID (many-to-one)
+- Messages: SenderID/ReceiverID → Teachers.ID or Parents.ID
+- Always use string IDs (never numeric) for cross-sheet references
+
+#### Component Organization
+```
+components/
+├── auth/           # Authentication-related components only
+├── dashboards/     # Role-specific dashboard components
+├── shared/         # Reusable UI components (Layout, Navigation)
+├── messaging/      # All messaging-related components
+├── students/       # Student management components
+└── common/         # Generic utilities (Button, Modal, etc.)
+```
+
+### User Experience Patterns
+
+#### Role-Based UI Design
+- **Admin/Teachers**: Dense information, multiple actions, complex forms
+- **Parents**: Simplified view, child-focused, mobile-first design
+- **Navigation**: Different menu structures per role, never show unauthorized options
+
+#### Mobile-First Approach
+- All components must work on 320px width minimum
+- Touch-friendly buttons (44px minimum touch target)
+- Swipe gestures for mobile interactions
+- Prioritize vertical scrolling over horizontal
+
+#### Loading & Error States
+```javascript
+// Standard loading pattern for all components:
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
+const [data, setData] = useState(null);
+
+// Always show loading state for API operations
+if (loading) return <LoadingSpinner />;
+if (error) return <ErrorMessage message={error} onRetry={handleRetry} />;
+```
+
+### Performance Optimization Patterns
+
+#### Google Sheets Optimization
+- Batch read operations (get entire sheets vs individual cells)
+- Cache frequently accessed data in localStorage
+- Implement optimistic UI updates
+- Use pagination for large datasets (50+ rows)
+
+#### Component Performance
+- Lazy load dashboard components
+- Memoize expensive calculations with useMemo
+- Use React.memo for pure components
+- Debounce search inputs (300ms delay)
+
+### Security Considerations
+
+#### Data Protection
+- Never store sensitive data in localStorage (use sessionStorage)
+- Validate all user inputs on both client and server
+- Implement proper error boundaries to prevent data leaks
+- Use Wix permissions.json for backend endpoint protection
+
+#### Role Security
+- Always verify user role server-side for sensitive operations
+- Client-side role checks are UI-only (not security)
+- Use allowlist approach (not blocklist) for permissions
+
+### Wix Platform Specifics
+
+#### Development Workflow
+```bash
+wix dev          # Start local development (not npm start)
+wix sync-types   # Sync Wix type definitions after changes
+wix build        # Build for production (automatic on git push)
+```
+
+#### Velo Page Structure
+```javascript
+// Standard Velo page structure:
+import wixData from 'wix-data';
+import wixAuth from 'wix-auth-frontend';
+
+$w.onReady(function () {
+  // Page initialization
+  initializeAuth();
+  loadPageData();
+});
+
+export function onLoginClick() {
+  // Event handlers always export
+}
+```
+
+#### API Calls from Frontend
+- Use wix-fetch for HTTP requests (not axios)
+- All backend functions must be in src/backend/
+- Export functions to make them callable from frontend
+- Use permissions.json to control access
+
+### Common Gotchas & Solutions
+
+#### Wix-Specific Issues
+- **React version locked**: Stick to React 16.14.0 patterns
+- **No npm packages**: Only Wix-approved packages work
+- **File naming**: Use Wix auto-generated names for pages (Home.c1dmp.js)
+- **Import paths**: Use relative imports, no path mapping
+
+#### Google Sheets Issues
+- **Rate limits**: Implement exponential backoff
+- **Data types**: All data comes as strings, convert explicitly
+- **Empty cells**: Handle undefined/null values gracefully
+- **Sheet ordering**: Don't rely on row order, use ID-based lookups
+
+#### User Preferences & Habits
+- Teachers prefer keyboard shortcuts for data entry
+- Parents primarily use mobile devices
+- School administrators need export/print functionality
+- Real-time updates are critical for attendance/messaging
+
+### Development Priorities
+1. **Functionality over beauty**: School staff prioritize working features
+2. **Mobile optimization**: 80% of parent users are on mobile
+3. **Data integrity**: Never lose student data, implement backup strategies
+4. **Simplicity**: Every feature should be explainable in 30 seconds
+
+This application serves a specific educational context where reliability and simplicity trump advanced features. 
