@@ -8,6 +8,7 @@
 let currentUser = null;
 let userRole = null;
 let currentPage = 'dashboard';
+let registrationData = {};
 
 // Initialisation de la page
 $w.onReady(function () {
@@ -28,6 +29,7 @@ function hideAllElements() {
   try {
     $w('#loginSection').hide();
     $w('#dashboardSection').hide();
+    $w('#registrationSection').hide();
     $w('#loadingSection').show();
   } catch (error) {
     console.log('Éléments de page non trouvés, utilisation de l\'affichage par défaut');
@@ -340,4 +342,360 @@ export function navGrades_click(event) {
   console.log('Navigation vers Notes');
   currentPage = 'grades';
   // À implémenter
+}
+
+export function navRegistration_click(event) {
+  console.log('Navigation vers Inscription');
+  currentPage = 'registration';
+  showRegistrationForm();
+}
+
+// === FONCTIONNALITÉS D'INSCRIPTION ===
+
+// Fonction pour afficher le formulaire d'inscription
+function showRegistrationForm() {
+  try {
+    // Masquer les autres sections
+    $w('#loginSection').hide();
+    $w('#dashboardSection').hide();
+    $w('#loadingSection').hide();
+    
+    // Afficher la section inscription
+    $w('#registrationSection').show();
+    
+    // Adapter l'interface selon le rôle
+    setupRegistrationForm();
+    
+    console.log('Formulaire d\'inscription affiché pour:', userRole);
+    
+  } catch (error) {
+    console.error('Erreur affichage formulaire inscription:', error);
+  }
+}
+
+// Configuration du formulaire d'inscription selon le rôle
+function setupRegistrationForm() {
+  try {
+    // Informations utilisateur
+    $w('#regCurrentUserName').text = currentUser?.name || 'Utilisateur';
+    $w('#regCurrentUserRole').text = getRoleDisplayName(userRole);
+    
+    if (userRole === 'parent') {
+      setupParentRegistration();
+    } else if (userRole === 'admin' || userRole === 'teacher') {
+      setupAdminRegistration();
+    }
+    
+    // Réinitialiser le formulaire
+    clearRegistrationForm();
+    
+  } catch (error) {
+    console.error('Erreur configuration formulaire:', error);
+  }
+}
+
+// Configuration pour les parents
+function setupParentRegistration() {
+  try {
+    $w('#regPageTitle').text = 'Inscription de votre enfant';
+    $w('#regPageSubtitle').text = 'Remplissez le formulaire ci-dessous pour inscrire votre enfant à l\'école';
+    
+    // Masquer les champs administratifs
+    $w('#regAdminFields').hide();
+    
+    // Pré-remplir l'email parent
+    if (currentUser.email) {
+      $w('#regParentEmail').value = currentUser.email;
+    }
+    
+    console.log('Configuration parent terminée');
+    
+  } catch (error) {
+    console.error('Erreur configuration parent:', error);
+  }
+}
+
+// Configuration pour admin/enseignants
+function setupAdminRegistration() {
+  try {
+    $w('#regPageTitle').text = 'Inscription d\'un nouvel élève';
+    $w('#regPageSubtitle').text = 'Formulaire d\'inscription administrative';
+    
+    // Afficher tous les champs administratifs
+    $w('#regAdminFields').show();
+    
+    // Charger les listes déroulantes
+    loadRegistrationData();
+    
+    console.log('Configuration admin terminée');
+    
+  } catch (error) {
+    console.error('Erreur configuration admin:', error);
+  }
+}
+
+// Charger les données pour l'inscription
+function loadRegistrationData() {
+  try {
+    // Charger la liste des classes
+    const classes = [
+      { value: 'CP', label: 'CP - Cours Préparatoire' },
+      { value: 'CE1', label: 'CE1 - Cours Élémentaire 1' },
+      { value: 'CE2', label: 'CE2 - Cours Élémentaire 2' },
+      { value: 'CM1', label: 'CM1 - Cours Moyen 1' },
+      { value: 'CM2', label: 'CM2 - Cours Moyen 2' }
+    ];
+    
+    $w('#regStudentClass').options = classes;
+    
+    // Charger la liste des parents existants (pour admin)
+    const parents = [
+      { value: 'parent1', label: 'Dupont, Marie - marie.dupont@email.com' },
+      { value: 'parent2', label: 'Martin, Pierre - pierre.martin@email.com' },
+      { value: 'new', label: '+ Nouveau parent' }
+    ];
+    
+    $w('#regExistingParent').options = parents;
+    
+    console.log('Données d\'inscription chargées');
+    
+  } catch (error) {
+    console.error('Erreur chargement données:', error);
+  }
+}
+
+// Fonction pour vider le formulaire d'inscription
+function clearRegistrationForm() {
+  try {
+    // Champs élève
+    $w('#regStudentFirstName').value = '';
+    $w('#regStudentLastName').value = '';
+    $w('#regStudentDateOfBirth').value = null;
+    $w('#regStudentGender').value = '';
+    $w('#regStudentAddress').value = '';
+    $w('#regStudentPhone').value = '';
+    
+    // Champs parent (si admin)
+    if (userRole !== 'parent') {
+      $w('#regParentFirstName').value = '';
+      $w('#regParentLastName').value = '';
+      $w('#regParentEmail').value = '';
+      $w('#regParentPhone').value = '';
+      $w('#regParentAddress').value = '';
+    }
+    
+    // Autres champs
+    $w('#regStudentClass').value = '';
+    $w('#regPreviousSchool').value = '';
+    $w('#regMedicalInfo').value = '';
+    $w('#regEmergencyContact').value = '';
+    
+    // Masquer les messages
+    $w('#regSuccessMessage').hide();
+    $w('#regErrorMessage').hide();
+    
+  } catch (error) {
+    console.log('Nettoyage formulaire - certains champs non trouvés');
+  }
+}
+
+// Gestionnaire pour le bouton de soumission de l'inscription
+export function submitRegistration_click(event) {
+  console.log('=== SOUMISSION INSCRIPTION ===');
+  
+  try {
+    // Valider le formulaire
+    if (!validateRegistrationForm()) {
+      showRegistrationError('Veuillez corriger les erreurs dans le formulaire');
+      return;
+    }
+    
+    // Collecter les données
+    const formData = collectRegistrationData();
+    
+    // Soumettre
+    submitRegistrationData(formData);
+    
+  } catch (error) {
+    console.error('Erreur soumission inscription:', error);
+    showRegistrationError('Une erreur est survenue lors de la soumission');
+  }
+}
+
+// Validation du formulaire d'inscription
+function validateRegistrationForm() {
+  let isValid = true;
+  
+  try {
+    // Champs requis
+    const firstName = $w('#regStudentFirstName').value;
+    const lastName = $w('#regStudentLastName').value;
+    const dateOfBirth = $w('#regStudentDateOfBirth').value;
+    
+    if (!firstName || firstName.length < 2) {
+      $w('#regStudentFirstName').style.borderColor = '#f44336';
+      isValid = false;
+    } else {
+      $w('#regStudentFirstName').style.borderColor = '#4CAF50';
+    }
+    
+    if (!lastName || lastName.length < 2) {
+      $w('#regStudentLastName').style.borderColor = '#f44336';
+      isValid = false;
+    } else {
+      $w('#regStudentLastName').style.borderColor = '#4CAF50';
+    }
+    
+    if (!dateOfBirth || new Date(dateOfBirth) >= new Date()) {
+      $w('#regStudentDateOfBirth').style.borderColor = '#f44336';
+      isValid = false;
+    } else {
+      $w('#regStudentDateOfBirth').style.borderColor = '#4CAF50';
+    }
+    
+    // Validation email parent (si nécessaire)
+    if (userRole !== 'parent') {
+      const parentEmail = $w('#regParentEmail').value;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      
+      if (!parentEmail || !emailRegex.test(parentEmail)) {
+        $w('#regParentEmail').style.borderColor = '#f44336';
+        isValid = false;
+      } else {
+        $w('#regParentEmail').style.borderColor = '#4CAF50';
+      }
+    }
+    
+  } catch (error) {
+    console.error('Erreur validation:', error);
+    isValid = false;
+  }
+  
+  return isValid;
+}
+
+// Collecter les données du formulaire
+function collectRegistrationData() {
+  try {
+    const data = {
+      student: {
+        firstName: $w('#regStudentFirstName').value,
+        lastName: $w('#regStudentLastName').value,
+        dateOfBirth: $w('#regStudentDateOfBirth').value,
+        gender: $w('#regStudentGender').value,
+        address: $w('#regStudentAddress').value,
+        phone: $w('#regStudentPhone').value,
+        class: $w('#regStudentClass').value,
+        previousSchool: $w('#regPreviousSchool').value,
+        medicalInfo: $w('#regMedicalInfo').value,
+        emergencyContact: $w('#regEmergencyContact').value
+      },
+      parent: {},
+      submittedBy: currentUser.id,
+      submittedByRole: userRole,
+      submissionDate: new Date().toISOString()
+    };
+    
+    // Données parent selon le rôle
+    if (userRole === 'parent') {
+      data.parent = {
+        id: currentUser.id,
+        email: currentUser.email,
+        name: currentUser.name
+      };
+    } else {
+      data.parent = {
+        firstName: $w('#regParentFirstName').value,
+        lastName: $w('#regParentLastName').value,
+        email: $w('#regParentEmail').value,
+        phone: $w('#regParentPhone').value,
+        address: $w('#regParentAddress').value
+      };
+    }
+    
+    return data;
+    
+  } catch (error) {
+    console.error('Erreur collecte données:', error);
+    throw error;
+  }
+}
+
+// Soumettre les données d'inscription
+function submitRegistrationData(data) {
+  try {
+    // Désactiver le bouton
+    $w('#regSubmitButton').disable();
+    $w('#regSubmitButton').label = 'Inscription en cours...';
+    
+    console.log('Données inscription:', JSON.stringify(data, null, 2));
+    
+    // Simulation de soumission (sera remplacé par Google Sheets)
+    setTimeout(() => {
+      try {
+        console.log('✅ Inscription réussie!');
+        console.log('Élève:', data.student.firstName, data.student.lastName);
+        console.log('Classe:', data.student.class);
+        
+        showRegistrationSuccess('Inscription enregistrée avec succès !');
+        clearRegistrationForm();
+        
+      } catch (error) {
+        console.error('Erreur traitement:', error);
+        showRegistrationError('Erreur lors de l\'enregistrement');
+      } finally {
+        // Réactiver le bouton
+        $w('#regSubmitButton').enable();
+        $w('#regSubmitButton').label = 'Confirmer l\'inscription';
+      }
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Erreur soumission:', error);
+    showRegistrationError('Erreur lors de la soumission');
+  }
+}
+
+// Afficher message de succès
+function showRegistrationSuccess(message) {
+  try {
+    $w('#regErrorMessage').hide();
+    $w('#regSuccessMessage').text = message;
+    $w('#regSuccessMessage').show();
+    
+    // Actions suivantes selon le rôle
+    if (userRole === 'parent') {
+      console.log('📧 Confirmation par email sera envoyée');
+    } else {
+      console.log('👤 Élève ajouté au système');
+    }
+    
+  } catch (error) {
+    console.log('✅ SUCCÈS:', message);
+  }
+}
+
+// Afficher message d'erreur
+function showRegistrationError(message) {
+  try {
+    $w('#regSuccessMessage').hide();
+    $w('#regErrorMessage').text = message;
+    $w('#regErrorMessage').show();
+  } catch (error) {
+    console.log('❌ ERREUR:', message);
+  }
+}
+
+// Gestionnaire pour retourner au dashboard
+export function backToDashboard_click(event) {
+  console.log('Retour au dashboard');
+  currentPage = 'dashboard';
+  showDashboard();
+}
+
+// Gestionnaire pour nouvelle inscription
+export function newRegistration_click(event) {
+  console.log('Nouvelle inscription');
+  clearRegistrationForm();
+  setupRegistrationForm();
 }
