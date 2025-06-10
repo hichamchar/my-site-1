@@ -8,7 +8,6 @@ import Layout from '../public/components/shared/Layout.js';
 import AdminDashboard from '../public/components/dashboards/AdminDashboard.js';
 import ParentDashboard from '../public/components/dashboards/ParentDashboard.js';
 import MessageCenter from '../public/components/messaging/MessageCenter.js';
-import LoginForm from '../public/components/auth/LoginForm.js';
 
 // Application principale
 function SchoolApp() {
